@@ -1,0 +1,16 @@
+[package]
+name = "yamc_rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = "0.9"
+noise = { version = "0.8", features = ["images"] }
+bevy_flycam = { git = "https://github.com/sburris0/bevy_flycam" }
+bevy-aabb-instancing = { git = "https://github.com/KrasnovPavel/bevy-aabb-instancing", rev = "cba11d7" }
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
