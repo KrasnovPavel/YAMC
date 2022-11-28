@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+itertools = "0.10.5"
 bevy = "0.9"
 noise = { version = "0.8", features = ["images"] }
 bevy_flycam = { git = "https://github.com/sburris0/bevy_flycam" }

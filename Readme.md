@@ -2,7 +2,7 @@
 Just for studying rust and it's gamedev capabilities.
 
 ## What is done
-Nothing yet
+- Terrain generation: heights and biomes
 
 ---
 Powered by [bevy](https://bevyengine.org/)
