@@ -3,13 +3,17 @@ use bevy::prelude::Component;
 
 #[derive(Copy, Clone, Component, Debug)]
 pub struct ChunkCoordinates {
-    pub x: i64,
-    pub z: i64,
+    pub x: i32,
+    pub z: i32,
 }
 
 impl ChunkCoordinates {
-    pub fn new(x: i64, z: i64) -> Self{
+    pub fn new(x: i32, z: i32) -> Self{
         ChunkCoordinates { x, z }
+    }
+
+    pub fn distance(&self, x: i32, z: i32) -> i32 {
+        (self.x - x).abs() + (self.z - z).abs()
     }
 }
 

@@ -20,19 +20,20 @@ pub struct Generator {
 }
 
 pub struct Chunk {
-    pub x: i64,
-    pub y: i64,
+    pub x: i32,
+    pub y: i32,
     pub cubes: Vec<Vec<Vec<(i8, blocks::BlockType)>>>,
 }
 
 impl Generator {
-    pub fn get_chunk(&self, ch_x: i64, ch_z: i64) -> Chunk {
+    pub fn get_chunk(&self, ch_x: i32, ch_z: i32) -> Chunk {
         use std::time::Instant;
         let now = Instant::now();
 
         let base_heights = HeightMap::new(ch_x, ch_z, MIN_ZOOM, self.seed);
         let biome_map = BiomeMap::new(ch_x, ch_z, MIN_ZOOM * 2.0, self.seed - 100, &base_heights);
         let topping_map = ToppingMap::new(ch_x, ch_z, MIN_ZOOM, self.seed - 200, &base_heights, &biome_map);
+        let cave_map = CaveMap::new(ch_x, ch_z, MIN_ZOOM * 5.0, self.seed, &biome_map);
         let noise_elapsed = now.elapsed();
 
         let mut result = Vec::with_capacity(CHUNK_RESOLUTION);
@@ -46,17 +47,22 @@ impl Generator {
                     i += 1;
                 }
 
-                let by = base_heights.get(x, z);
+                let by = base_heights.get(x as i32, z as i32);
                 for y in -100..by {
+                    if cave_map.get(x as i32, y, z as i32) {
+                        continue;
+                    }
                     result[z][x].push((y, blocks::STONE));
                     i += 1;
                 }
 
-                let biome = biome_map.get(x, z);
-                let ty = topping_map.get(x, z);
+                let biome = biome_map.get(x as i32, z as i32);
+                let ty = topping_map.get(x as i32, z as i32);
                 for y in by..=ty {
-                    i += 1;
-                    let block = match biome {
+                    if cave_map.get(x as i32, y, z as i32) {
+                        continue;
+                    }
+                    let mut block = match biome {
                         Biome::Tundra => blocks::ICE,
                         Biome::Plains => blocks::DIRT,
                         Biome::Forest => blocks::FOREST_DIRT,
@@ -66,7 +72,13 @@ impl Generator {
                         Biome::FrozenOcean => blocks::ICE,
                         Biome::Ocean => blocks::WATER,
                     };
+
+                    if block == blocks::ICE && biome == Biome::FrozenOcean && y < ty - 2 {
+                        block = blocks::WATER;
+                    }
+
                     result[z][x].push((y, block));
+                    i += 1;
                 }
             }
         }

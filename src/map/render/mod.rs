@@ -8,6 +8,7 @@ use crate::map::render::chunk_coordinates::ChunkCoordinates;
 const DRAW_CHUNK_SIZE: usize = 1024;
 const CUBE_SIZE: Vec3 = Vec3::new(0.5, 0.5, 0.5);
 const VISIBLE_CHUNKS_DISTANCE: usize = 10 * DEBUG_WORLD_SCALE;
+const CHUNKS_CUT_DISTANCE: usize = 0 * DEBUG_WORLD_SCALE;
 
 pub struct MapGenerationPlugin {
     pub(crate) seed: u32,
@@ -47,8 +48,8 @@ fn chunk_spawner(map: Res<Generator>,
                  query: Query<&ChunkCoordinates>)
 {
     for (tr, _) in &cameras {
-        let ch_x = (tr.translation.x / (CHUNK_RESOLUTION as f32 * CUBE_SIDE)).floor() as i64;
-        let ch_z = (tr.translation.z / (CHUNK_RESOLUTION as f32 * CUBE_SIDE)).floor() as i64;
+        let ch_x = (tr.translation.x / (CHUNK_RESOLUTION as f32 * CUBE_SIDE)).floor() as i32;
+        let ch_z = (tr.translation.z / (CHUNK_RESOLUTION as f32 * CUBE_SIDE)).floor() as i32;
         let chunks = get_visible_chunks(ch_x, ch_z);
         let new_chunks: Vec<_> = chunks.iter()
             .filter(|(x, z)| !query.iter().any(|c| c.x == *x && c.z == *z))
@@ -62,13 +63,24 @@ fn chunk_spawner(map: Res<Generator>,
     }
 }
 
-fn get_visible_chunks(ch_x: i64, ch_z: i64) -> Vec<(i64, i64)> {
+fn get_visible_chunks(ch_x: i32, ch_z: i32) -> Vec<(i32, i32)> {
     let mut result = Vec::with_capacity(VISIBLE_CHUNKS_DISTANCE * VISIBLE_CHUNKS_DISTANCE);
-    for x in (ch_x - (VISIBLE_CHUNKS_DISTANCE as i64))..=(ch_x + (VISIBLE_CHUNKS_DISTANCE as i64)) {
-        for z in (ch_z - (VISIBLE_CHUNKS_DISTANCE as i64))..=(ch_z + (VISIBLE_CHUNKS_DISTANCE as i64)) {
+    for x in (ch_x - (VISIBLE_CHUNKS_DISTANCE as i32))..=(ch_x + (VISIBLE_CHUNKS_DISTANCE as i32)) {
+        for z in (ch_z - (VISIBLE_CHUNKS_DISTANCE as i32))..=(ch_z + (VISIBLE_CHUNKS_DISTANCE as i32)) {
             result.push((x, z));
         }
     }
+
+    if CHUNKS_CUT_DISTANCE == 0 {
+        return result;
+    }
+
+    for x in (ch_x - (CHUNKS_CUT_DISTANCE as i32))..=(ch_x + (CHUNKS_CUT_DISTANCE as i32)) {
+        for z in (ch_z - (CHUNKS_CUT_DISTANCE as i32))..=(ch_z + (CHUNKS_CUT_DISTANCE as i32)) {
+            result.retain(|&(rx, rz)| !(rx == x && rz == z))
+        }
+    }
+
     result
 }
 
@@ -82,7 +94,8 @@ fn chunk_despawner(cameras: Query<(&Transform, &Camera)>,
     pos = Vec3::new(pos.x.round(), pos.y.round(), pos.z.round());
 
     for (entity, &coords) in &query {
-        if pos.distance(Vec3::from(coords)) > VISIBLE_CHUNKS_DISTANCE as f32 * 2.0 {
+        if coords.distance(pos.x as i32, pos.z as i32) > VISIBLE_CHUNKS_DISTANCE as i32 * 3
+           || coords.distance(pos.x as i32, pos.z as i32) < CHUNKS_CUT_DISTANCE as i32 {
             // info!("Despawning chunk ({}, {}, {})", coords.x, coords.y, coords.z);
             commands
                 .entity(entity)
@@ -97,14 +110,14 @@ fn spawn_chunk(chunk: Chunk, metadata: &mut ResMut<RendererMetadata>, mut comman
     for z in 0..chunk.cubes.len() {
         for x in 0..chunk.cubes[z].len() {
             for (y, block) in chunk.cubes[z][x].iter() {
-                add_cube(x as i64, *y, z as i64, &mut i, block.color, &chunk_coordinates, metadata, commands);
+                add_cube(x as i32, *y, z as i32, &mut i, block.color, &chunk_coordinates, metadata, commands);
             }
         }
     }
     spawn_cuboid(chunk_coordinates.clone(), &metadata.cuboids_buffer[0..i].to_owned(), &mut commands, &metadata.color_options_id)
 }
 
-fn add_cube(x: i64, y: i8, z: i64, i: &mut usize, color: Color,
+fn add_cube(x: i32, y: i8, z: i32, i: &mut usize, color: Color,
             chunk_coordinates: &ChunkCoordinates,
             metadata: &mut ResMut<RendererMetadata>,
             mut commands: &mut Commands) {

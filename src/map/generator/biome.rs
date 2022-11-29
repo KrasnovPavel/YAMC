@@ -1,6 +1,6 @@
 use bevy::prelude::Color;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub enum Biome {
     Tundra,
     Plains,
@@ -26,9 +26,9 @@ impl Biome {
         match (temperature, vertical) {
             (i8::MIN..FREEZE_TEMP,     i8::MIN..OCEAN_HEIGHT)            => Biome::FrozenOcean,
             (FREEZE_TEMP..i8::MAX,     i8::MIN..OCEAN_HEIGHT)            => Biome::Ocean,
+            (i8::MIN..FREEZE_TEMP,     _)                                => Biome::Tundra,
             (_,                        MOUNTAIN_HEIGHT..ICE_PIKE_HEIGHT) => Biome::Mountain,
             (_,                        ICE_PIKE_HEIGHT..i8::MAX)         => Biome::IcePike,
-            (i8::MIN..FREEZE_TEMP,     _)                                => Biome::Tundra,
             (FREEZE_TEMP..FOREST_TEMP, _)                                => Biome::Forest,
             (FOREST_TEMP..PLAINS_TEMP, _)                                => Biome::Plains,
             (PLAINS_TEMP..i8::MAX,     OCEAN_HEIGHT..MAX_DESERT_HEIGHT)  => Biome::Desert,
