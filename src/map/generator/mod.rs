@@ -1,11 +1,12 @@
 pub mod biome;
-mod noise_map_wrappers;
+mod noise_maps;
 
 use bevy::prelude::{Resource, warn, info};
 
 use crate::map::blocks;
 use crate::map::generator::biome::*;
-use crate::map::generator::noise_map_wrappers::*;
+use noise_maps::*;
+use crate::map::blocks::BlockType;
 
 pub const DEBUG_WORLD_SCALE: usize = 1;
 pub const CHUNK_RESOLUTION: usize = 16 / DEBUG_WORLD_SCALE;
@@ -34,6 +35,7 @@ impl Generator {
         let biome_map = BiomeMap::new(ch_x, ch_z, MIN_ZOOM * 2.0, self.seed - 100, &base_heights);
         let topping_map = ToppingMap::new(ch_x, ch_z, MIN_ZOOM, self.seed - 200, &base_heights, &biome_map);
         let cave_map = CaveMap::new(ch_x, ch_z, MIN_ZOOM * 5.0, self.seed, &biome_map);
+        let resource_map = ResourceMap::new(ch_x, ch_z, MIN_ZOOM * 5.0, self.seed);
         let noise_elapsed = now.elapsed();
 
         let mut result = Vec::with_capacity(CHUNK_RESOLUTION);
@@ -43,7 +45,7 @@ impl Generator {
             for x in 0..CHUNK_RESOLUTION {
                 result[z].push(Vec::with_capacity(256));
                 for y in -101..-100 {
-                    result[z][x].push((y, blocks::UNBREAKABLE));
+                    result[z][x].push((y, BlockType::UNBREAKABLE));
                     i += 1;
                 }
 
@@ -52,7 +54,7 @@ impl Generator {
                     if cave_map.get(x as i32, y, z as i32) {
                         continue;
                     }
-                    result[z][x].push((y, blocks::STONE));
+                    result[z][x].push((y, resource_map.get(x as i32, y, z as i32)));
                     i += 1;
                 }
 
@@ -63,18 +65,18 @@ impl Generator {
                         continue;
                     }
                     let mut block = match biome {
-                        Biome::Tundra => blocks::ICE,
-                        Biome::Plains => blocks::DIRT,
-                        Biome::Forest => blocks::FOREST_DIRT,
-                        Biome::Desert => blocks::SAND,
-                        Biome::Mountain => blocks::STONE,
-                        Biome::IcePike => blocks::ICE,
-                        Biome::FrozenOcean => blocks::ICE,
-                        Biome::Ocean => blocks::WATER,
+                        Biome::Tundra => BlockType::ICE,
+                        Biome::Plains => BlockType::DIRT,
+                        Biome::Forest => BlockType::FOREST_DIRT,
+                        Biome::Desert => BlockType::SAND,
+                        Biome::Mountain => BlockType::STONE,
+                        Biome::IcePike => BlockType::ICE,
+                        Biome::FrozenOcean => BlockType::ICE,
+                        Biome::Ocean => BlockType::WATER,
                     };
 
-                    if block == blocks::ICE && biome == Biome::FrozenOcean && y < ty - 2 {
-                        block = blocks::WATER;
+                    if block == BlockType::ICE && biome == Biome::FrozenOcean && y < ty - 2 {
+                        block = BlockType::WATER;
                     }
 
                     result[z][x].push((y, block));
