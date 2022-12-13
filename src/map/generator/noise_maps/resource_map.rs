@@ -27,7 +27,7 @@ impl ResourceMap {
 }
 
 impl Noise3D<BlockType> for ResourceMap {
-    fn get(&self, x: i32, y: i8, z: i32) -> BlockType {
+    fn get(&self, x: i32, y: u8, z: i32) -> BlockType {
         let (fx, fy, fz) = self.get_pos(x, y, z);
         let value = perlin_3d([fx, fy, fz], &self.perm_table);
 

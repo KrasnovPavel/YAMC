@@ -12,26 +12,26 @@ pub enum Biome {
     Ocean,
 }
 
-pub const OCEAN_HEIGHT: i8 = -25;
-pub const MOUNTAIN_HEIGHT: i8 = 70;
-pub const ICE_PIKE_HEIGHT: i8 = 80;
-pub const MAX_DESERT_HEIGHT: i8 = 60;
+pub const OCEAN_HEIGHT: u8 = 127 - 25;
+pub const MOUNTAIN_HEIGHT: u8 = 127 + 70;
+pub const ICE_PIKE_HEIGHT: u8 = 127 + 80;
+pub const MAX_DESERT_HEIGHT: u8 = 127 + 60;
 
-pub const FREEZE_TEMP: i8 = -40;
-pub const FOREST_TEMP: i8 = 0;
-pub const PLAINS_TEMP: i8 = 40;
+pub const FREEZE_TEMP: u8 = 127 - 40;
+pub const FOREST_TEMP: u8 = 127;
+pub const PLAINS_TEMP: u8 = 127 + 40;
 
 impl Biome {
-    pub fn from_map(temperature: i8, vertical: i8) -> Biome {
+    pub fn from_map(temperature: u8, vertical: u8) -> Biome {
         match (temperature, vertical) {
-            (i8::MIN..FREEZE_TEMP,     i8::MIN..OCEAN_HEIGHT)            => Biome::FrozenOcean,
-            (FREEZE_TEMP..i8::MAX,     i8::MIN..OCEAN_HEIGHT)            => Biome::Ocean,
-            (i8::MIN..FREEZE_TEMP,     _)                                => Biome::Tundra,
+            (0..FREEZE_TEMP,           0..OCEAN_HEIGHT)                  => Biome::FrozenOcean,
+            (FREEZE_TEMP..u8::MAX,     0..OCEAN_HEIGHT)                  => Biome::Ocean,
+            (0..FREEZE_TEMP,           _)                                => Biome::Tundra,
             (_,                        MOUNTAIN_HEIGHT..ICE_PIKE_HEIGHT) => Biome::Mountain,
-            (_,                        ICE_PIKE_HEIGHT..i8::MAX)         => Biome::IcePike,
+            (_,                        ICE_PIKE_HEIGHT..u8::MAX)         => Biome::IcePike,
             (FREEZE_TEMP..FOREST_TEMP, _)                                => Biome::Forest,
             (FOREST_TEMP..PLAINS_TEMP, _)                                => Biome::Plains,
-            (PLAINS_TEMP..i8::MAX,     OCEAN_HEIGHT..MAX_DESERT_HEIGHT)  => Biome::Desert,
+            (PLAINS_TEMP..u8::MAX,     OCEAN_HEIGHT..MAX_DESERT_HEIGHT)  => Biome::Desert,
             _                                                            => Biome::Forest,
         }
     }

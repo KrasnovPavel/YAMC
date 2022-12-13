@@ -1,7 +1,7 @@
 pub mod chunk_coordinates;
 
 use bevy::prelude::*;
-use bevy_aabb_instancing::{ColorOptions, ColorOptionsMap, Cuboid, Cuboids, ScalarHueColorOptions, VertexPullingRenderPlugin, COLOR_MODE_RGB, ColorOptionsId};
+use bevy_aabb_instancing::{ColorOptions, ColorOptionsMap, Cuboid, Cuboids, ScalarHueColorOptions, VertexPullingRenderPlugin, COLOR_MODE_RGB, ColorOptionsId, CuboidsBundle};
 use crate::map::generator::*;
 use crate::map::render::chunk_coordinates::ChunkCoordinates;
 
@@ -43,11 +43,14 @@ impl Plugin for MapGenerationPlugin {
 
 fn chunk_spawner(map: Res<Generator>,
                  cameras: Query<(&Transform, &Camera)>,
-                 mut metadata: ResMut<RendererMetadata>,
+                 metadata: Res<RendererMetadata>,
                  mut commands: Commands,
                  query: Query<&ChunkCoordinates>)
 {
     for (tr, _) in &cameras {
+        use std::time::Instant;
+        let now = Instant::now();
+
         let ch_x = (tr.translation.x / (CHUNK_RESOLUTION as f32 * CUBE_SIDE)).floor() as i32;
         let ch_z = (tr.translation.z / (CHUNK_RESOLUTION as f32 * CUBE_SIDE)).floor() as i32;
         let chunks = get_visible_chunks(ch_x, ch_z);
@@ -58,8 +61,12 @@ fn chunk_spawner(map: Res<Generator>,
             return;
         }
         let &(nch_x, nch_z) = new_chunks[0];
-        spawn_chunk(map.get_chunk(nch_x, nch_z), &mut metadata, &mut commands);
         info!("Spawning chunk ({nch_x}, {nch_z})");
+        let chunk = map.get_chunk(nch_x, nch_z);
+        let after_generation = now.elapsed();
+        spawn_chunk(chunk, &metadata, &mut commands);
+        let total = now.elapsed();
+        info!("Chunk ({nch_x}, {nch_z}) spawned. Render time: {after_generation:.2?}ms. Total time: {total:.2?}ms");
     }
 }
 
@@ -104,44 +111,39 @@ fn chunk_despawner(cameras: Query<(&Transform, &Camera)>,
     }
 }
 
-fn spawn_chunk(chunk: Chunk, metadata: &mut ResMut<RendererMetadata>, mut commands: &mut Commands) {
+fn spawn_chunk(chunk: Chunk, metadata: &Res<RendererMetadata>, mut commands: &mut Commands) {
     let chunk_coordinates = ChunkCoordinates::new(chunk.x, chunk.y);
-    let mut i = 0;
-    for z in 0..chunk.cubes.len() {
-        for x in 0..chunk.cubes[z].len() {
-            for (y, block) in chunk.cubes[z][x].iter() {
-                add_cube(x as i32, *y, z as i32, &mut i, block.color, &chunk_coordinates, metadata, commands);
+    let mut cuboids = Vec::with_capacity(chunk.get_amount_of_cubes());
+    for x in 0..CHUNK_RESOLUTION {
+        for y in 0..256 {
+            for z in 0..CHUNK_RESOLUTION {
+                if let Some(block) = chunk.get(x, y, z) {
+                    let cuboid = create_cuboid(x as i32, y as i32 - 127, z as i32, block.color, &chunk_coordinates);
+                    cuboids.push(cuboid);
+                }
             }
         }
     }
-    spawn_cuboid(chunk_coordinates.clone(), &metadata.cuboids_buffer[0..i].to_owned(), &mut commands, &metadata.color_options_id)
+
+    spawn_cuboids(chunk_coordinates.clone(), cuboids, &mut commands, &metadata.color_options_id);
 }
 
-fn add_cube(x: i32, y: i8, z: i32, i: &mut usize, color: Color,
-            chunk_coordinates: &ChunkCoordinates,
-            metadata: &mut ResMut<RendererMetadata>,
-            mut commands: &mut Commands) {
+fn create_cuboid(x: i32, y: i32, z: i32, color: Color, chunk_coordinates: &ChunkCoordinates) -> Cuboid {
     let c = Vec3::new(x as f32, y as f32, z as f32) + Vec3::from(*chunk_coordinates) * (CHUNK_RESOLUTION as f32);
     let min = (c - CUBE_SIZE) * CUBE_SIDE;
     let max = (c + CUBE_SIZE) * CUBE_SIDE;
-    if *i == DRAW_CHUNK_SIZE {
-        spawn_cuboid(chunk_coordinates.clone(), &metadata.cuboids_buffer, &mut commands, &metadata.color_options_id);
-        *i = 0;
-    }
-    metadata.cuboids_buffer[*i] = Cuboid::new(min, max, color.as_rgba_u32(), true, 0);
-    *i += 1;
+    Cuboid::new(min, max, color.as_rgba_u32(), true, 0)
 }
 
-fn spawn_cuboid(chunk_coordinates: ChunkCoordinates,
-                instances: &Vec<Cuboid>,
-                commands: &mut Commands,
-                color_options_id: &ColorOptionsId)
+fn spawn_cuboids(chunk_coordinates: ChunkCoordinates, instances: Vec<Cuboid>,
+                 commands: &mut Commands, color_options_id: &ColorOptionsId)
 {
     let cuboids = Cuboids::new(instances.clone());
-    let aabb = cuboids.aabb();
-    commands
-        .spawn(SpatialBundle::default())
-        .insert((cuboids, aabb, *color_options_id, chunk_coordinates));
+    commands.spawn(CuboidsBundle {
+        color_options_id: *color_options_id,
+        spatial: SpatialBundle::default(),
+        cuboids,
+    }).insert(chunk_coordinates);
 }
 
 fn setup(mut color_options_map: ResMut<ColorOptionsMap>, mut metadata: ResMut<RendererMetadata>)

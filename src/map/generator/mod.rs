@@ -1,5 +1,6 @@
 pub mod biome;
 mod noise_maps;
+mod chunk;
 
 use bevy::prelude::{Resource, warn, info};
 
@@ -7,6 +8,8 @@ use crate::map::blocks;
 use crate::map::generator::biome::*;
 use noise_maps::*;
 use crate::map::blocks::BlockType;
+
+pub use chunk::*;
 
 pub const DEBUG_WORLD_SCALE: usize = 1;
 pub const CHUNK_RESOLUTION: usize = 16 / DEBUG_WORLD_SCALE;
@@ -18,12 +21,6 @@ const MIN_ZOOM: f64 = 0.01 * 64.0 / CHUNK_RESOLUTION as f64;
 #[derive(Resource)]
 pub struct Generator {
     pub(crate) seed: u32,
-}
-
-pub struct Chunk {
-    pub x: i32,
-    pub y: i32,
-    pub cubes: Vec<Vec<Vec<(i8, blocks::BlockType)>>>,
 }
 
 impl Generator {
@@ -38,32 +35,33 @@ impl Generator {
         let resource_map = ResourceMap::new(ch_x, ch_z, MIN_ZOOM * 5.0, self.seed);
         let noise_elapsed = now.elapsed();
 
-        let mut result = Vec::with_capacity(CHUNK_RESOLUTION);
-        result.resize(CHUNK_RESOLUTION, Vec::with_capacity(CHUNK_RESOLUTION));
+        let mut result = Chunk::new(ch_x, ch_z);
         let mut i = 0;
         for z in 0..CHUNK_RESOLUTION {
             for x in 0..CHUNK_RESOLUTION {
-                result[z].push(Vec::with_capacity(256));
-                for y in -101..-100 {
-                    result[z][x].push((y, BlockType::UNBREAKABLE));
+                for y in 26..27 {
+                    result.set(x, y, z, Some(BlockType::UNBREAKABLE));
                     i += 1;
                 }
 
                 let by = base_heights.get(x as i32, z as i32);
-                for y in -100..by {
+                for y in 27..by {
                     if cave_map.get(x as i32, y, z as i32) {
                         continue;
                     }
-                    result[z][x].push((y, resource_map.get(x as i32, y, z as i32)));
+                    result.set(x, y as usize, z, Some(resource_map.get(x as i32, y, z as i32)));
                     i += 1;
                 }
 
                 let biome = biome_map.get(x as i32, z as i32);
                 let ty = topping_map.get(x as i32, z as i32);
                 for y in by..=ty {
-                    if cave_map.get(x as i32, y, z as i32) {
+                    if cave_map.get(x as i32, y, z as i32)
+                        && biome != Biome::Ocean
+                        && biome != Biome::FrozenOcean {
                         continue;
                     }
+
                     let mut block = match biome {
                         Biome::Tundra => BlockType::ICE,
                         Biome::Plains => BlockType::DIRT,
@@ -79,18 +77,14 @@ impl Generator {
                         block = BlockType::WATER;
                     }
 
-                    result[z][x].push((y, block));
+                    result.set(x, y as usize, z, Some(block));
                     i += 1;
                 }
             }
         }
 
         let elapsed = now.elapsed();
-        info!("Chunk ({ch_x}, {ch_z}) generated: {i} cubes, {noise_elapsed:.2?} - {elapsed:.2?}");
-        Chunk {
-            x: ch_x,
-            y: ch_z,
-            cubes: result
-        }
+        info!("Chunk ({ch_x}, {ch_z}) generated: {i} cubes. Noise generation took {noise_elapsed:.2?}ms. Total generation time: {elapsed:.2?}ms.");
+        result
     }
 }

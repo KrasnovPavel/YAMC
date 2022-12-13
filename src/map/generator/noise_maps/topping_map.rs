@@ -22,17 +22,17 @@ impl ToppingMap<'_> {
     }
 }
 
-impl Noise2D<i8> for ToppingMap<'_> {
-    fn get(&self, x: i32, z: i32) -> i8 {
+impl Noise2D<u8> for ToppingMap<'_> {
+    fn get(&self, x: i32, z: i32) -> u8 {
         match self.biome_map.get(x, z) {
-            Biome::Tundra => self.forest_noise.get(x, z).abs() / 20 + self.height_map.get(x, z) + 2,
-            Biome::Plains => self.desert_noise.get(x, z).abs() / 20 + self.height_map.get(x, z) + 2,
-            Biome::Forest => self.forest_noise.get(x, z).abs() / 20 + self.height_map.get(x, z) + 2,
-            Biome::Desert => self.desert_noise.get(x, z).abs() / 20 + self.height_map.get(x, z) + 2,
-            Biome::Mountain => self.mountain_noise.get(x, z).abs() / 20 + self.height_map.get(x, z),
-            Biome::IcePike => self.mountain_noise.get(x, z).abs() / 20 + self.height_map.get(x, z),
-            Biome::FrozenOcean => OCEAN_HEIGHT + self.desert_noise.get(x, z).abs() / 20 + 2,
-            Biome::Ocean => OCEAN_HEIGHT + 2,
+            Biome::Tundra      => self.height_map.get(x, z) + self.forest_noise.get(x, z) / 40   + 2,
+            Biome::Plains      => self.height_map.get(x, z) + self.desert_noise.get(x, z) / 40   + 2,
+            Biome::Forest      => self.height_map.get(x, z) + self.forest_noise.get(x, z) / 40   + 2,
+            Biome::Desert      => self.height_map.get(x, z) + self.desert_noise.get(x, z) / 40   + 2,
+            Biome::Mountain    => self.height_map.get(x, z) + self.mountain_noise.get(x, z) / 40,
+            Biome::IcePike     => self.height_map.get(x, z) + self.mountain_noise.get(x, z) / 40,
+            Biome::FrozenOcean => OCEAN_HEIGHT              + self.desert_noise.get(x, z) / 40   + 2,
+            Biome::Ocean       => OCEAN_HEIGHT                                                   + 3,
         }
     }
 }
