@@ -4,12 +4,14 @@ use crate::map::blocks::BlockType;
 use crate::map::generator::noise_maps::Noise3D;
 use super::BiomeMap;
 
-const IRON_RANGE: (f64, f64) = (-0.5, -0.49);
-const COPPER_RANGE: (f64, f64) = (0.0, 0.01);
-const COAL_RANGE: (f64, f64) = (0.5, 0.51);
+const IRON_PROBABILITY: f64 = 0.1;
+const COPPER_PROBABILITY: f64 = 0.1;
+const COAL_PROBABILITY: f64 = 0.1;
 
 pub struct ResourceMap {
-    perm_table: PermutationTable,
+    iron_table: PermutationTable,
+    copper_table: PermutationTable,
+    coal_table: PermutationTable,
     ch_x: f64,
     ch_z: f64,
     zoom: f64,
@@ -18,7 +20,9 @@ pub struct ResourceMap {
 impl ResourceMap {
     pub fn new(x: i32, z: i32, zoom: f64, seed: u32) -> ResourceMap {
         ResourceMap {
-            perm_table: PermutationTable::new(seed),
+            iron_table: PermutationTable::new(seed),
+            copper_table: PermutationTable::new(seed + 9865),
+            coal_table: PermutationTable::new(seed + 452),
             ch_x: x as f64 * zoom,
             ch_z: z as f64 * zoom,
             zoom,
@@ -29,14 +33,23 @@ impl ResourceMap {
 impl Noise3D<BlockType> for ResourceMap {
     fn get(&self, x: i32, y: u8, z: i32) -> BlockType {
         let (fx, fy, fz) = self.get_pos(x, y, z);
-        let value = perlin_3d([fx, fy, fz], &self.perm_table);
 
-        match value {
-            _ if value > IRON_RANGE.0 && value < IRON_RANGE.1 => BlockType::IRON,
-            _ if value > COPPER_RANGE.0 && value < COPPER_RANGE.1 => BlockType::COPPER,
-            _ if value > COAL_RANGE.0 && value < COAL_RANGE.1 => BlockType::COAL,
-            _ => BlockType::STONE,
+        let iron = (perlin_3d([fx, fy, fz], &self.iron_table) + 1.0) / 2.0;
+        if iron < IRON_PROBABILITY {
+            return BlockType::IRON;
         }
+
+        let copper = (perlin_3d([fx, fy, fz], &self.copper_table) + 1.0) / 2.0;
+        if copper < COPPER_PROBABILITY {
+            return BlockType::COPPER;
+        }
+
+        let coal = (perlin_3d([fx, fy, fz], &self.coal_table) + 1.0) / 2.0;
+        if coal < COAL_PROBABILITY {
+            return BlockType::COAL;
+        }
+
+        BlockType::STONE
     }
 
     fn get_zoom(&self) -> f64 {

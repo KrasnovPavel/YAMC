@@ -78,3 +78,16 @@ impl BlockType {
         color: Color::BLACK,
     };
 }
+
+pub struct BlockKind(Vec<BlockType>);
+
+impl BlockKind {
+    pub const RESOURCES: [BlockType; 3] = [BlockType::IRON, BlockType::COPPER, BlockType::COAL];
+    pub const CRUST: [BlockType; 2] = [BlockType::STONE, BlockType::UNBREAKABLE];
+    pub const TOPPING: [BlockType; 4] = [BlockType::ICE, BlockType::DIRT, BlockType::FOREST_DIRT, BlockType::SAND];
+    pub const FLUID: [BlockType; 1] = [BlockType::WATER];
+
+    pub fn contains(&self, block_type: &BlockType) -> bool {
+        self.0.contains(block_type)
+    }
+}

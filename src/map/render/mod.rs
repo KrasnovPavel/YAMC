@@ -4,11 +4,23 @@ use bevy::prelude::*;
 use bevy_aabb_instancing::{ColorOptions, ColorOptionsMap, Cuboid, Cuboids, ScalarHueColorOptions, VertexPullingRenderPlugin, COLOR_MODE_RGB, ColorOptionsId, CuboidsBundle};
 use crate::map::generator::*;
 use crate::map::render::chunk_coordinates::ChunkCoordinates;
+use enumflags2::{bitflags, make_bitflags, BitFlags};
+use crate::map::blocks::{BlockType, BlockKind};
 
 const DRAW_CHUNK_SIZE: usize = 1024;
 const CUBE_SIZE: Vec3 = Vec3::new(0.5, 0.5, 0.5);
 const VISIBLE_CHUNKS_DISTANCE: usize = 10 * DEBUG_WORLD_SCALE;
 const CHUNKS_CUT_DISTANCE: usize = 0 * DEBUG_WORLD_SCALE;
+
+#[bitflags(default = Stone | Topping | Resources | Water)]
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum BlockFilter {
+    Stone = 0b0001,
+    Topping = 0b0010,
+    Resources = 0b0100,
+    Water = 0b1000,
+}
 
 pub struct MapGenerationPlugin {
     pub(crate) seed: u32,
@@ -17,14 +29,15 @@ pub struct MapGenerationPlugin {
 #[derive(Resource)]
 struct RendererMetadata {
     color_options_id: ColorOptionsId,
-    cuboids_buffer: Vec<Cuboid>,
+    block_filter: BitFlags<BlockFilter>,
 }
 
 impl Default for RendererMetadata {
     fn default() -> Self {
         RendererMetadata {
             color_options_id: ColorOptionsId(0),
-            cuboids_buffer: Vec::new(),
+            block_filter: BitFlags::default(),
+            // block_filter: BlockFilter::Resources | BlockFilter::Topping,
         }
     }
 }
@@ -66,7 +79,8 @@ fn chunk_spawner(map: Res<Generator>,
         let after_generation = now.elapsed();
         spawn_chunk(chunk, &metadata, &mut commands);
         let total = now.elapsed();
-        info!("Chunk ({nch_x}, {nch_z}) spawned. Render time: {after_generation:.2?}ms. Total time: {total:.2?}ms");
+        let render_time = total - after_generation;
+        info!("Chunk ({nch_x}, {nch_z}) spawned. Render time: {render_time:.2?}. Total time: {total:.2?}.");
     }
 }
 
@@ -103,7 +117,7 @@ fn chunk_despawner(cameras: Query<(&Transform, &Camera)>,
     for (entity, &coords) in &query {
         if coords.distance(pos.x as i32, pos.z as i32) > VISIBLE_CHUNKS_DISTANCE as i32 * 3
            || coords.distance(pos.x as i32, pos.z as i32) < CHUNKS_CUT_DISTANCE as i32 {
-            // info!("Despawning chunk ({}, {}, {})", coords.x, coords.y, coords.z);
+            info!("Despawning chunk ({}, {})", coords.x, coords.z);
             commands
                 .entity(entity)
                 .despawn();
@@ -118,6 +132,10 @@ fn spawn_chunk(chunk: Chunk, metadata: &Res<RendererMetadata>, mut commands: &mu
         for y in 0..256 {
             for z in 0..CHUNK_RESOLUTION {
                 if let Some(block) = chunk.get(x, y, z) {
+                    if !should_render_block(&block, metadata.block_filter) {
+                        continue;
+                    }
+
                     let cuboid = create_cuboid(x as i32, y as i32 - 127, z as i32, block.color, &chunk_coordinates);
                     cuboids.push(cuboid);
                 }
@@ -126,6 +144,22 @@ fn spawn_chunk(chunk: Chunk, metadata: &Res<RendererMetadata>, mut commands: &mu
     }
 
     spawn_cuboids(chunk_coordinates.clone(), cuboids, &mut commands, &metadata.color_options_id);
+}
+
+fn should_render_block(block: &BlockType, filter: BitFlags<BlockFilter>) -> bool {
+    if filter.contains(BlockFilter::Water) && BlockKind::FLUID.contains(block) {
+        return true;
+    }
+    if filter.contains(BlockFilter::Topping) && BlockKind::TOPPING.contains(block) {
+        return true;
+    }
+    if filter.contains(BlockFilter::Stone) && BlockKind::CRUST.contains(block) {
+        return true;
+    }
+    if filter.contains(BlockFilter::Resources) && BlockKind::RESOURCES.contains(block) {
+        return true;
+    }
+    false
 }
 
 fn create_cuboid(x: i32, y: i32, z: i32, color: Color, chunk_coordinates: &ChunkCoordinates) -> Cuboid {
@@ -160,7 +194,4 @@ fn setup(mut color_options_map: ResMut<ColorOptionsMap>, mut metadata: ResMut<Re
         color_mode: COLOR_MODE_RGB,
         wireframe: 0,
     });
-
-    metadata.cuboids_buffer = Vec::with_capacity(DRAW_CHUNK_SIZE);
-    metadata.cuboids_buffer.resize(DRAW_CHUNK_SIZE, Cuboid::new(Vec3::ZERO, Vec3::ZERO, 0, false, 0));
 }

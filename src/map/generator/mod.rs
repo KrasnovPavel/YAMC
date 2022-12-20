@@ -84,7 +84,7 @@ impl Generator {
         }
 
         let elapsed = now.elapsed();
-        info!("Chunk ({ch_x}, {ch_z}) generated: {i} cubes. Noise generation took {noise_elapsed:.2?}ms. Total generation time: {elapsed:.2?}ms.");
+        info!("Chunk ({ch_x}, {ch_z}) generated: {i} cubes. Noise generation took {noise_elapsed:.2?}. Total generation time: {elapsed:.2?}.");
         result
     }
 }
