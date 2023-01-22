@@ -1,8 +1,7 @@
 use noise::core::perlin::perlin_3d;
 use noise::permutationtable::PermutationTable;
-use crate::map::blocks::BlockType;
+use crate::map::chunk::BlockType;
 use crate::map::generator::noise_maps::Noise3D;
-use super::BiomeMap;
 
 const IRON_PROBABILITY: f64 = 0.1;
 const COPPER_PROBABILITY: f64 = 0.1;
@@ -30,26 +29,26 @@ impl ResourceMap {
     }
 }
 
-impl Noise3D<BlockType> for ResourceMap {
-    fn get(&self, x: i32, y: u8, z: i32) -> BlockType {
+impl Noise3D<&'static BlockType> for ResourceMap {
+    fn get(&self, x: i32, y: u8, z: i32) -> &'static BlockType {
         let (fx, fy, fz) = self.get_pos(x, y, z);
 
         let iron = (perlin_3d([fx, fy, fz], &self.iron_table) + 1.0) / 2.0;
         if iron < IRON_PROBABILITY {
-            return BlockType::IRON;
+            return &BlockType::IRON;
         }
 
         let copper = (perlin_3d([fx, fy, fz], &self.copper_table) + 1.0) / 2.0;
         if copper < COPPER_PROBABILITY {
-            return BlockType::COPPER;
+            return &BlockType::COPPER;
         }
 
         let coal = (perlin_3d([fx, fy, fz], &self.coal_table) + 1.0) / 2.0;
         if coal < COAL_PROBABILITY {
-            return BlockType::COAL;
+            return &BlockType::COAL;
         }
 
-        BlockType::STONE
+        &BlockType::STONE
     }
 
     fn get_zoom(&self) -> f64 {

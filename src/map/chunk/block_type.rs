@@ -77,6 +77,10 @@ impl BlockType {
         name: "Unbreakable",
         color: Color::BLACK,
     };
+
+    pub fn id(&self) -> usize {
+        self.id
+    }
 }
 
 pub struct BlockKind(Vec<BlockType>);

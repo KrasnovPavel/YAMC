@@ -1,6 +1,7 @@
 use noise::{Fbm, Perlin};
 use noise::utils::{NoiseMap, NoiseMapBuilder, PlaneMapBuilder};
-use crate::map::generator::{CHUNK_NOISE_BASE_BOUNDS, CHUNK_RESOLUTION};
+use crate::map::chunk::Chunk;
+use crate::map::generator::{CHUNK_NOISE_BASE_BOUNDS,};
 use super::utils::*;
 
 pub struct HeightMap {
@@ -24,7 +25,7 @@ impl HeightMap {
         let fbm = Fbm::<Perlin>::new(seed);
 
         PlaneMapBuilder::<_, 2>::new(fbm)
-            .set_size(CHUNK_RESOLUTION, CHUNK_RESOLUTION)
+            .set_size(Chunk::LENGTH, Chunk::WIDTH)
             .set_x_bounds(start_x, end_x)
             .set_y_bounds(start_y, end_y)
             .build()

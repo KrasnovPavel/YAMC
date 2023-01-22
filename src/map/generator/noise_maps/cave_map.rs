@@ -1,7 +1,6 @@
 use noise::core::perlin::perlin_3d;
 use noise::permutationtable::PermutationTable;
 use crate::map::generator::biome::Biome;
-use crate::map::generator::CHUNK_RESOLUTION;
 use super::{BiomeMap, Noise2D, Noise3D};
 
 const CAVE_PROBABILITY: f64 = 0.3;

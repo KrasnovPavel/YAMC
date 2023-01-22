@@ -17,9 +17,9 @@ pub const MOUNTAIN_HEIGHT: u8 = 127 + 70;
 pub const ICE_PIKE_HEIGHT: u8 = 127 + 80;
 pub const MAX_DESERT_HEIGHT: u8 = 127 + 60;
 
-pub const FREEZE_TEMP: u8 = 127 - 40;
-pub const FOREST_TEMP: u8 = 127;
-pub const PLAINS_TEMP: u8 = 127 + 40;
+pub const FREEZE_TEMP: u8 = 50;
+pub const FOREST_TEMP: u8 = 100;
+pub const PLAINS_TEMP: u8 = 127;
 
 impl Biome {
     pub fn from_map(temperature: u8, vertical: u8) -> Biome {
