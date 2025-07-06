@@ -7,7 +7,7 @@ pub struct ChunkInteractionPlugin;
 impl Plugin for ChunkInteractionPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_system_to_stage(CoreStage::First, reset_updated);
+            .add_systems(First, reset_updated);
     }
 }
 

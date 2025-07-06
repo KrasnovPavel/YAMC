@@ -1,4 +1,5 @@
 use bevy::prelude::Color;
+use bevy::color::palettes::*;
 
 #[derive(Clone)]
 pub struct BlockType {
@@ -21,49 +22,49 @@ impl BlockType {
     pub const ICE: BlockType = BlockType {
         id: 3,
         name: "Ice",
-        color: Color::AQUAMARINE,
+        color: Color::Srgba(css::AQUAMARINE),
     };
 
     pub const STONE: BlockType = BlockType {
         id: 1,
         name: "Stone",
-        color: Color::DARK_GRAY,
+        color: Color::Srgba(css::DARK_GRAY),
     };
 
     pub const DIRT: BlockType = BlockType {
         id: 2,
         name: "Dirt",
-        color: Color::GREEN,
+        color: Color::Srgba(css::GREEN),
     };
 
     pub const FOREST_DIRT: BlockType = BlockType {
         id: 4,
         name: "ForestDirt",
-        color: Color::DARK_GREEN,
+        color: Color::Srgba(css::DARK_GREEN),
     };
 
     pub const WATER: BlockType = BlockType {
         id: 5,
         name: "Water",
-        color: Color::NAVY,
+        color: Color::Srgba(css::NAVY),
     };
 
     pub const SAND: BlockType = BlockType {
         id: 6,
         name: "Sand",
-        color: Color::GOLD,
+        color: Color::Srgba(css::GOLD),
     };
 
     pub const IRON: BlockType = BlockType {
         id: 7,
         name: "Iron",
-        color: Color::GRAY,
+        color: Color::Srgba(css::GRAY),
     };
 
     pub const COPPER: BlockType = BlockType {
         id: 8,
         name: "Copper",
-        color: Color::ORANGE,
+        color: Color::Srgba(css::ORANGE),
     };
 
     pub const COAL: BlockType = BlockType {

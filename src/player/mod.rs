@@ -18,7 +18,7 @@ fn setup_players(query: Query<Entity, With<Camera>>, mut commands: Commands) {
 fn interact_with_chunk(players: Query<&Transform, With<Player>>,
                        mut chunks: Query<(&ChunkCoordinates, &mut Chunk)>) {
     // let transform_op = players.iter().next();
-    // if let None = transform_op {
+    // if transform_op.is_none() {
     //     return;
     // }
     // let transform = transform_op.unwrap();
@@ -49,7 +49,7 @@ pub struct YamcPlayerPlugin;
 impl Plugin for YamcPlayerPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_startup_system_to_stage(StartupStage::PostStartup, setup_players)
-            .add_system(interact_with_chunk);
+            .add_systems(PostStartup, setup_players)
+            .add_systems(Update, interact_with_chunk);
     }
 }

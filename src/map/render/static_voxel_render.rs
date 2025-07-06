@@ -1,5 +1,5 @@
+use bevy::asset::RenderAssetUsages;
 use bevy::prelude::*;
-use bevy::prelude::CoreStage::PostUpdate;
 use bevy::render::mesh::*;
 use crate::map::chunk::Chunk;
 use crate::map::chunk::chunk_coordinates::ChunkCoordinates;
@@ -50,7 +50,7 @@ const SIDES_OFFSETS: [(i32, i32, i32); 6] = [(0, 1, 0), (0, -1, 0), (1, 0, 0), (
 
 impl From<&Chunk> for Mesh {
     fn from(chunk: &Chunk) -> Self {
-        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
+        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, /*RenderAssetUsages::MAIN_WORLD |*/ RenderAssetUsages::RENDER_WORLD);
         let mut vertices: Vec<[f32; 3]> = Vec::new();
         let mut indices: Vec<u32> = Vec::new();
         let mut colors: Vec<[f32; 4]> = Vec::new();
@@ -77,9 +77,9 @@ impl From<&Chunk> for Mesh {
                 indices.extend(SIDES_INDICES.map(|si| si + (current_index * 4)));
                 current_index += 1;
                 colors.extend([[
-                    block.unwrap().block_type.color.r(),
-                    block.unwrap().block_type.color.g(),
-                    block.unwrap().block_type.color.b(),
+                    block.unwrap().block_type.color.to_srgba().red,
+                    block.unwrap().block_type.color.to_srgba().green,
+                    block.unwrap().block_type.color.to_srgba().blue,
                     1.0]; 4]);
             }
         }
@@ -88,7 +88,7 @@ impl From<&Chunk> for Mesh {
                               VertexAttributeValues::Float32x3(vertices));
         mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR,
                               VertexAttributeValues::Float32x4(colors));
-        mesh.set_indices(Some(Indices::U32(indices)));
+        mesh.insert_indices(Indices::U32(indices));
 
         mesh
     }
@@ -99,8 +99,8 @@ pub struct StaticVoxelRenderPlugin;
 impl Plugin for StaticVoxelRenderPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_system(spawn_mesh)
-            .add_system_to_stage(PostUpdate, update_mesh);
+            .add_systems(Update, spawn_mesh)
+            .add_systems(PostUpdate, update_mesh);
     }
 }
 
@@ -111,27 +111,23 @@ fn spawn_mesh(query: Query<(Entity, &ChunkCoordinates, &Chunk), Added<Chunk>>,
     for (entity, chunk_coordinates, chunk) in &query {
         commands
             .entity(entity)
-            .insert(MaterialMeshBundle {
-                mesh: meshes.add(chunk.into()),
-                material: materials.add(StandardMaterial {
-                    unlit: true,
-                    ..default()
-                }),
-                transform: Transform::from_translation(chunk_coordinates.global_pos()),
-                global_transform: Default::default(),
-                visibility: Visibility::VISIBLE,
-                computed_visibility: Default::default(),
-            });
+            .insert(Mesh3d(meshes.add(Mesh::from(chunk))))
+            .insert(MeshMaterial3d(materials.add(StandardMaterial {
+                unlit: true,
+                ..default()
+            })))
+            .insert(Transform::from_translation(chunk_coordinates.global_pos()))
+            .insert(Visibility::Visible);
     }
 }
 
-fn update_mesh(mut query: Query<(&mut Chunk, &mut Handle<Mesh>)>, mut meshes: ResMut<Assets<Mesh>>) {
+fn update_mesh(mut query: Query<(&mut Chunk, &mut Mesh3d)>, mut meshes: ResMut<Assets<Mesh>>) {
     for (mut chunk, mut handle) in query.iter_mut() {
         if !chunk.is_updated {
             continue;
         }
         chunk.is_updated = false;
         let chunk: &Chunk = chunk.into_inner();
-        *handle.into_inner() = meshes.add(chunk.into());
+        *handle.into_inner() = Mesh3d(meshes.add(Mesh::from(chunk)));
     }
 }

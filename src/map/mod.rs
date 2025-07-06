@@ -17,10 +17,9 @@ pub struct MapGenerationPlugin {
 impl Plugin for MapGenerationPlugin {
     fn build(&self, app: &mut App) {
         app
-            .insert_resource(Msaa { samples: 1 })
             .insert_resource(Generator { seed: self.seed })
-            .add_system(chunk_spawner)
-            .add_system(chunk_despawner);
+            .add_systems(Update, chunk_spawner)
+            .add_systems(Update, chunk_despawner);
     }
 }
 
