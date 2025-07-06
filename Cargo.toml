@@ -8,6 +8,7 @@ itertools = "0.14.0"
 bevy = "0.16.1"
 noise = { version = "0.8", features = ["images"] }
 bevy_fly_camera = "*"
+rayon = "*"
 
 [profile.dev]
 opt-level = 1

@@ -5491,6 +5491,7 @@ dependencies = [
  "bevy_fly_camera",
  "itertools 0.14.0",
  "noise",
+ "rayon",
 ]
 
 [[package]]

@@ -43,7 +43,7 @@ fn chunk_spawner(map: Res<Generator>,
         }
         let &(nch_x, nch_z) = new_chunks[0];
         info!("Spawning chunk ({nch_x}, {nch_z})");
-        spawn_chunk(nch_x, nch_z, &map, &mut commands);
+        spawn_chunk_column(nch_x, nch_z, &map, &mut commands);
         let total = now.elapsed();
         info!("Chunk ({nch_x}, {nch_z}) spawned. Total time: {total:.2?}.");
     }
@@ -90,8 +90,9 @@ fn chunk_despawner(cameras: Query<(&Transform, &Camera)>,
     }
 }
 
-fn spawn_chunk(ch_x: i32, ch_z: i32, map: &Generator, commands: &mut Commands) {
-    let chunk_coordinates = ChunkCoordinates::new(ch_x, ch_z);
-    let chunk = map.get_chunk(ch_x, ch_z);
-    commands.spawn((chunk, chunk_coordinates));
+fn spawn_chunk_column(ch_x: i32, ch_z: i32, map: &Generator, commands: &mut Commands) {
+    for (ch_y, chunk) in map.get_chunk_column(ch_x, ch_z).iter().enumerate() {
+        let chunk_coordinates = ChunkCoordinates::new(ch_x, ch_y as i32, ch_z);
+        commands.spawn((chunk.clone(), chunk_coordinates));
+    }
 }

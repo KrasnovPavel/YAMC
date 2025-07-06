@@ -25,7 +25,7 @@ impl HeightMap {
         let fbm = Fbm::<Perlin>::new(seed);
 
         PlaneMapBuilder::<_, 2>::new(fbm)
-            .set_size(Chunk::LENGTH, Chunk::WIDTH)
+            .set_size(Chunk::LENGTH as usize, Chunk::WIDTH as usize)
             .set_x_bounds(start_x, end_x)
             .set_y_bounds(start_y, end_y)
             .build()
