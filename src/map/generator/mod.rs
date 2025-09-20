@@ -7,11 +7,12 @@ use rayon::iter::IntoParallelIterator;
 use crate::map::generator::biome::*;
 use noise_maps::*;
 use crate::map::chunk::{BlockType, Chunk};
+use crate::utils::{BlockPos, CHUNK_SIZE, CHUNK_SIZE_F64, CHUNK_SIZE_I32};
 
 pub const CUBE_SIDE: f32 = 1.0f32;
 
-const CHUNK_NOISE_BASE_BOUNDS: f64 = 10.0 / 256.0 * Chunk::WIDTH as f64;
-const MIN_ZOOM: f64 = 0.01 * 64.0 / Chunk::WIDTH as f64;
+const CHUNK_NOISE_BASE_BOUNDS: f64 = 10.0 / 256.0 * CHUNK_SIZE_F64;
+const MIN_ZOOM: f64 = 0.01 * 64.0 / CHUNK_SIZE_F64;
 const MAP_HEIGHT: usize = 256;
 
 #[derive(Resource)]
@@ -30,7 +31,7 @@ impl Generator {
         let resource_map = ResourceMap::new(ch_x, ch_z, MIN_ZOOM * 5.0, self.seed);
         let noise_elapsed = now.elapsed();
 
-        let chunk_column = (0..(MAP_HEIGHT / Chunk::HEIGHT as usize))
+        let chunk_column = (0..(MAP_HEIGHT / CHUNK_SIZE))
             .into_par_iter()
             .map(|ch_y| self.get_chunk(ch_x, ch_y as i32, ch_z, &base_heights, &biome_map, &topping_map, &cave_map, &resource_map))
             .collect();
@@ -52,25 +53,26 @@ impl Generator {
 
         let mut chunk = Chunk::new();
         let mut i = 0;
-        for z in 0..(Chunk::WIDTH as i32) {
-            for x in 0..(Chunk::LENGTH as i32) {
-                let min_y = ch_y * Chunk::HEIGHT as i32;
+        for z in 0..CHUNK_SIZE_I32 {
+            for x in 0..CHUNK_SIZE_I32 {
+                let min_y = ch_y * CHUNK_SIZE_I32;
                 let map_height = base_heights.get(x, z) as i32;
-                let mut height_in_chunk = i32::min(map_height, min_y + Chunk::HEIGHT as i32) - min_y;
+                let mut height_in_chunk = i32::min(map_height, min_y + CHUNK_SIZE_I32) - min_y;
                 let biome = biome_map.get(x, z);
                 let ty = topping_map.get(x, z);
                 let topping_height = topping_map.get(x, z) as i32;
-                let topping_height_in_chunk = i32::min(topping_height, min_y + Chunk::HEIGHT as i32) - min_y;
+                let topping_height_in_chunk = i32::min(topping_height, min_y + CHUNK_SIZE_I32) - min_y;
 
                 for y in 0..height_in_chunk {
+                    let block_pos = BlockPos::new(x, y, z);
                     if cave_map.get(x, y + min_y, z) {
                         continue;
                     }
                     unsafe {
                         if (y == 0 && ch_y == 0) {
-                            chunk.spawn_block_unchecked(x, y, z, &BlockType::UNBREAKABLE);
+                            chunk.spawn_block_unchecked(&block_pos, &BlockType::UNBREAKABLE);
                         } else {
-                            chunk.spawn_block_unchecked(x, y, z, resource_map.get(x, y + min_y, z));
+                            chunk.spawn_block_unchecked(&block_pos, resource_map.get(x, y + min_y, z));
                         }
                     }
                     i += 1;
@@ -85,6 +87,7 @@ impl Generator {
                 }
 
                 for y in height_in_chunk..topping_height_in_chunk {
+                    let block_pos = BlockPos::new(x, y, z);
                     if  biome != Biome::Ocean
                         && biome != Biome::FrozenOcean
                         && cave_map.get(x, y + min_y, z) {
@@ -107,7 +110,7 @@ impl Generator {
                     }
 
                     unsafe {
-                        chunk.spawn_block_unchecked(x, y, z, block);
+                        chunk.spawn_block_unchecked(&block_pos, block);
                     }
                     i += 1;
                 }

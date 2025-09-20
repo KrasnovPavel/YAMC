@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use itertools::Itertools;
 use crate::map::chunk::{Block, BlockType, Chunk};
-use crate::map::chunk::chunk_coordinates::ChunkCoordinates;
+use crate::utils::{ChunkPos, WorldBlockPos, WorldPos};
 
 #[derive(Component, Eq, PartialEq)]
 pub struct Player(usize);
@@ -16,7 +16,7 @@ fn setup_players(query: Query<Entity, With<Camera>>, mut commands: Commands) {
 }
 
 fn interact_with_chunk(players: Query<&Transform, With<Player>>,
-                       mut chunks: Query<(&ChunkCoordinates, &mut Chunk)>) {
+                       mut chunks: Query<(&ChunkPos, &mut Chunk)>) {
     // let transform_op = players.iter().next();
     // if transform_op.is_none() {
     //     return;
@@ -26,9 +26,10 @@ fn interact_with_chunk(players: Query<&Transform, With<Player>>,
     // let coords = std::iter::repeat(transform.translation)
     //     .enumerate()
     //     .map(|(i, pos)| pos + transform.forward() * i as f32)
-    //     .map(|pos| (pos.x as i32, pos.y as i32, pos.z as i32))
+    //     .map (|pos| WorldPos(pos))
+    //     .map(|pos| WorldBlockPos(IVec3::new(pos.0.x as i32, pos.0.y as i32, pos.0.z as i32)))
     //     .unique()
-    //     .map(|(x, y, z)| ChunkCoordinates::from_voxel_coordinates(x, y, z))
+    //     .map(|pos| ChunkPos::from(pos.into()))
     //     .take(5);
     //
     // for (cc, (x, y, z)) in coords {

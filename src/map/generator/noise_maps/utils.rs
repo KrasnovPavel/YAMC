@@ -1,4 +1,4 @@
-use crate::map::chunk::Chunk;
+use crate::utils::CHUNK_SIZE_F64;
 
 pub const VERTICAL_SCALE: f32 = 100.0;
 
@@ -14,9 +14,9 @@ pub trait Noise3D<T> {
 
     fn get_pos(&self, x: i32, y: i32, z: i32) -> (f64, f64, f64) {
         let (ch_x, ch_z) = self.get_chunk_pos();
-        let fx = (x as f64) * self.get_zoom() / Chunk::LENGTH as f64 + ch_x;
+        let fx = (x as f64) * self.get_zoom() / CHUNK_SIZE_F64 + ch_x;
         let fy = (y as f64) * self.get_zoom() / 2.0;
-        let fz = (z as f64) * self.get_zoom() / Chunk::WIDTH as f64 + ch_z;
+        let fz = (z as f64) * self.get_zoom() / CHUNK_SIZE_F64 + ch_z;
 
         (fx, fy, fz)
     }

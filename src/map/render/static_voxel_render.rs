@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 use bevy::prelude::*;
 use crate::map::chunk::{Block, Chunk};
-use crate::map::chunk::chunk_coordinates::ChunkCoordinates;
 use crate::map::render::culled_chunk_mesher::CulledChunkMesher;
+use crate::utils::{ChunkPos, WorldPos};
 
 pub struct StaticVoxelRenderPlugin;
 
@@ -15,22 +15,22 @@ impl Plugin for StaticVoxelRenderPlugin {
 
 const SIDES_OFFSETS: [(i32, i32, i32); 4] = [(1, 0, 0), (-1, 0, 0), (0, 0, 1), (0, 0, -1)];
 
-fn spawn_mesh(query: Query<(Entity, &ChunkCoordinates, &Chunk), Added<Chunk>>,
+fn spawn_mesh(query: Query<(Entity, &ChunkPos, &Chunk), Added<Chunk>>,
               mut commands: Commands,
               mut materials: ResMut<Assets<StandardMaterial>>,
               mut meshes: ResMut<Assets<Mesh>>,) {
     let map = HashMap::from_iter(query.iter()
-        .map(|(_, chunk_coordinates, chunk)| (*chunk_coordinates, chunk)));
+        .map(|(_, chunk_pos, chunk)| (*chunk_pos, chunk)));
     let mut counter = 0;
-    for (entity, chunk_coordinates, chunk) in &query {
+    for (entity, chunk_pos, chunk) in &query {
         commands
             .entity(entity)
-            .insert(Mesh3d(meshes.add(chunk.create_mesh_culled(chunk_coordinates, &map))))
+            .insert(Mesh3d(meshes.add(chunk.create_mesh_culled(chunk_pos, &map))))
             .insert(MeshMaterial3d(materials.add(StandardMaterial {
                 unlit: true,
                 ..default()
             })))
-            .insert(Transform::from_translation(chunk_coordinates.global_pos()))
+            .insert(Transform::from_translation(WorldPos::from(*chunk_pos).0))
             .insert(Visibility::Visible);
         counter += 1;
     }
@@ -39,8 +39,8 @@ fn spawn_mesh(query: Query<(Entity, &ChunkCoordinates, &Chunk), Added<Chunk>>,
     }
 }
 
-fn remesh_neighbour_chunks_after_spawn(fresh_chunks: Query<&ChunkCoordinates, Added<Chunk>>,
-                                       query: Query<(&ChunkCoordinates, &Chunk, &Mesh3d)>,
+fn remesh_neighbour_chunks_after_spawn(fresh_chunks: Query<&ChunkPos, Added<Chunk>>,
+                                       query: Query<(&ChunkPos, &Chunk, &Mesh3d)>,
                                        mut meshes: ResMut<Assets<Mesh>>) {
     if (fresh_chunks.is_empty()) {
         return;
@@ -49,7 +49,7 @@ fn remesh_neighbour_chunks_after_spawn(fresh_chunks: Query<&ChunkCoordinates, Ad
     let mut chunks_to_update = HashSet::new();
     for pos in fresh_chunks {
         for (x, y, z) in SIDES_OFFSETS {
-            let neighbour_pos = ChunkCoordinates::new(pos.x + x, pos.y + y, pos.z + z);
+            let neighbour_pos = ChunkPos::new(pos.0.x + x, pos.0.y + y, pos.0.z + z);
             chunks_to_update.insert(neighbour_pos);
         }
     }

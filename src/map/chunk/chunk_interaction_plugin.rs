@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use crate::map::chunk::chunk_coordinates::ChunkCoordinates;
 use super::Chunk;
 
 pub struct ChunkInteractionPlugin;

@@ -1,11 +1,11 @@
 mod map;
 mod player;
+mod utils;
 
 use bevy::prelude::*;
 use bevy_fly_camera::{FlyCamera, FlyCameraPlugin};
 use crate::map::MapGenerationPlugin;
 use crate::map::render::StaticVoxelRenderPlugin;
-use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use std::env;
 use crate::player::YamcPlayerPlugin;
 
