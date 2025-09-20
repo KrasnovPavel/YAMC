@@ -30,7 +30,7 @@ impl ResourceMap {
 }
 
 impl Noise3D<&'static BlockType> for ResourceMap {
-    fn get(&self, x: i32, y: u8, z: i32) -> &'static BlockType {
+    fn get(&self, x: i32, y: i32, z: i32) -> &'static BlockType {
         let (fx, fy, fz) = self.get_pos(x, y, z);
 
         let iron = (perlin_3d([fx, fy, fz], &self.iron_table) + 1.0) / 2.0;

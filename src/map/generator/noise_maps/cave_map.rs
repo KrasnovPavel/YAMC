@@ -28,7 +28,7 @@ impl CaveMap<'_> {
 }
 
 impl Noise3D<bool> for CaveMap<'_> {
-    fn get(&self, x: i32, y: u8, z: i32) -> bool {
+    fn get(&self, x: i32, y: i32, z: i32) -> bool {
         if self.biome_map.get(x, z) == Biome::Ocean {
             return false;
         }

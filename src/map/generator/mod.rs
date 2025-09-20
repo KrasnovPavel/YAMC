@@ -2,15 +2,13 @@ use rayon::iter::ParallelIterator;
 pub mod biome;
 mod noise_maps;
 
-use std::cmp::min;
 use bevy::prelude::{Resource, warn, info, Commands};
 use rayon::iter::IntoParallelIterator;
 use crate::map::generator::biome::*;
 use noise_maps::*;
 use crate::map::chunk::{BlockType, Chunk};
-use crate::map::chunk::chunk_coordinates::ChunkCoordinates;
 
-pub const CUBE_SIDE: f32 = 1.0 as f32;
+pub const CUBE_SIDE: f32 = 1.0f32;
 
 const CHUNK_NOISE_BASE_BOUNDS: f64 = 10.0 / 256.0 * Chunk::WIDTH as f64;
 const MIN_ZOOM: f64 = 0.01 * 64.0 / Chunk::WIDTH as f64;
@@ -54,25 +52,25 @@ impl Generator {
 
         let mut chunk = Chunk::new();
         let mut i = 0;
-        for z in 0..Chunk::WIDTH {
-            for x in 0..Chunk::LENGTH {
+        for z in 0..(Chunk::WIDTH as i32) {
+            for x in 0..(Chunk::LENGTH as i32) {
                 let min_y = ch_y * Chunk::HEIGHT as i32;
-                let map_height = base_heights.get(x as i32, z as i32) as i32;
+                let map_height = base_heights.get(x, z) as i32;
                 let mut height_in_chunk = i32::min(map_height, min_y + Chunk::HEIGHT as i32) - min_y;
-                let biome = biome_map.get(x as i32, z as i32);
-                let ty = topping_map.get(x as i32, z as i32);
-                let topping_height = topping_map.get(x as i32, z as i32) as i32;
+                let biome = biome_map.get(x, z);
+                let ty = topping_map.get(x, z);
+                let topping_height = topping_map.get(x, z) as i32;
                 let topping_height_in_chunk = i32::min(topping_height, min_y + Chunk::HEIGHT as i32) - min_y;
 
                 for y in 0..height_in_chunk {
-                    if cave_map.get(x as i32, (y + min_y) as u8, z as i32) {
+                    if cave_map.get(x, y + min_y, z) {
                         continue;
                     }
                     unsafe {
                         if (y == 0 && ch_y == 0) {
-                            chunk.spawn_block_unchecked(x, y as u8, z, &BlockType::UNBREAKABLE);
+                            chunk.spawn_block_unchecked(x, y, z, &BlockType::UNBREAKABLE);
                         } else {
-                            chunk.spawn_block_unchecked(x, y as u8, z, resource_map.get(x as i32, (y + min_y) as u8, z as i32));
+                            chunk.spawn_block_unchecked(x, y, z, resource_map.get(x, y + min_y, z));
                         }
                     }
                     i += 1;
@@ -89,7 +87,7 @@ impl Generator {
                 for y in height_in_chunk..topping_height_in_chunk {
                     if  biome != Biome::Ocean
                         && biome != Biome::FrozenOcean
-                        && cave_map.get(x as i32, (y + min_y) as u8, z as i32) {
+                        && cave_map.get(x, y + min_y, z) {
                         continue;
                     }
 
@@ -109,7 +107,7 @@ impl Generator {
                     }
 
                     unsafe {
-                        chunk.spawn_block_unchecked(x, y as u8, z, block);
+                        chunk.spawn_block_unchecked(x, y, z, block);
                     }
                     i += 1;
                 }

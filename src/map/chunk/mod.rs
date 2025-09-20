@@ -36,30 +36,11 @@ impl Chunk {
         }
     }
 
-    pub unsafe fn spawn_block_unchecked(&mut self, x: u8, y: u8, z: u8, value: &'static BlockType) {
-        let pos = Self::pos_to_index_u8(x, y, z);
+    pub unsafe fn spawn_block_unchecked(&mut self, x: i32, y: i32, z: i32, value: &'static BlockType) {
+        let pos = Self::pos_to_index(x, y, z);
         let placed_mut = self.blocks.get_unchecked_mut(pos);
         *placed_mut = Some(value.into());
         self.amount_of_blocks += 1;
-    }
-
-    pub fn spawn(pop_fn: impl Fn(u8, u8, u8) -> Option<&'static BlockType>) -> Self {
-        let mut blocks = vec![None; Self::SIZE];
-        let mut amount_of_cubes = 0;
-
-        for (i, block) in blocks.iter_mut().enumerate() {
-            let (x, y, z) = Self::index_to_pos(i);
-            *block = pop_fn(x, y, z).map(|bl| bl.into());
-            if let Some(_) = block {
-                amount_of_cubes += 1;
-            }
-        }
-
-        Chunk {
-            blocks,
-            is_updated: false,
-            amount_of_blocks: amount_of_cubes,
-        }
     }
 
     pub fn get_amount_of_blocks(&self) -> usize {
@@ -74,46 +55,28 @@ impl Chunk {
         self.blocks.iter_mut()
     }
 
-    pub fn iter_with_pos(&self) -> Map<Enumerate<Iter<Option<Block>>>, fn((usize, &Option<Block>)) -> ((u8, u8, u8), &Option<Block>)> {
+    pub fn iter_with_pos(&self) -> Map<Enumerate<Iter<Option<Block>>>, fn((usize, &Option<Block>)) -> ((i32, i32, i32), &Option<Block>)> {
         self.blocks.iter()
             .enumerate()
             .map(|(i, block)| (Self::index_to_pos(i), block))
     }
 
 
-    pub fn iter_mut_with_pos(&mut self) -> Map<Enumerate<IterMut<Option<Block>>>, fn((usize, &mut Option<Block>)) -> ((u8, u8, u8), &mut Option<Block>)> {
+    pub fn iter_mut_with_pos(&mut self) -> Map<Enumerate<IterMut<Option<Block>>>, fn((usize, &mut Option<Block>)) -> ((i32, i32, i32), &mut Option<Block>)> {
         self.blocks.iter_mut()
             .enumerate()
             .map(|(i, block)| (Self::index_to_pos(i), block))
     }
 
-
-    pub unsafe fn set_unchecked(&mut self, x: u8, y: u8, z: u8, block: Option<Block>) {
-        let placed = self.get_unchecked(x, y, z);
-        match (placed, block) {
-            (None, None) => {}
-            (Some(_), None) => self.amount_of_blocks += 1,
-            (None, Some(_)) => self.amount_of_blocks += 1,
-            (Some(_), Some(_)) => {}
-        }
-
-        let placed_mut = self.get_unchecked_mut(x, y, z);
-        *placed_mut = block;
-    }
-
-    pub fn index_to_pos(i: usize) -> (u8, u8, u8) {
-        let x = (i % Self::LENGTH as usize) as u8;
-        let y = (i / (Self::WIDTH as usize * Self::LENGTH as usize)) as u8;
-        let z = ((i / Self::LENGTH as usize) % Self::WIDTH as usize) as u8;
+    pub fn index_to_pos(i: usize) -> (i32, i32, i32) {
+        let x = (i & 0b11111) as i32;
+        let y = ((i >> 10) & 0b11111) as i32;
+        let z = ((i >> 5) & 0b11111) as i32;
         (x, y, z)
     }
 
-    pub fn pos_to_index_u8(x: u8, y: u8, z: u8) -> usize {
-        y as usize * Self::WIDTH as usize * Self::LENGTH as usize + z as usize * Self::LENGTH as usize + x as usize
-    }
-
-    pub fn pos_to_index(x: usize, y: usize, z: usize) -> usize {
-        y * Self::WIDTH as usize * Self::LENGTH as usize + z * Self::LENGTH as usize + x
+    pub fn pos_to_index(x: i32, y: i32, z: i32) -> usize {
+        ((y << 10) | (z << 5) | x) as usize
     }
 
     pub fn get_block_at(&self, x: i32, y: i32, z: i32) -> Result<&Option<Block>, PositionNotInChunkError> {
@@ -123,26 +86,15 @@ impl Chunk {
             return Err(PositionNotInChunkError());
         }
         unsafe {
-            return Ok(self.get_unchecked(x as u8, y as u8, z as u8));
-        }
-    }
-
-    pub fn get_block_at_u8(&self, x: u8, y: u8, z: u8) -> Result<&Option<Block>, PositionNotInChunkError> {
-        if x >= Self::WIDTH
-            || y >= Self::HEIGHT
-            || z >= Self::LENGTH {
-            return Err(PositionNotInChunkError());
-        }
-        unsafe {
             return Ok(self.get_unchecked(x, y, z));
         }
     }
-
-    unsafe fn get_unchecked(&self, x: u8, y: u8, z: u8) -> &Option<Block> {
-        self.blocks.get_unchecked(Self::pos_to_index_u8(x, y, z))
+    
+    unsafe fn get_unchecked(&self, x: i32, y: i32, z: i32) -> &Option<Block> {
+        self.blocks.get_unchecked(Self::pos_to_index(x, y, z))
     }
 
-    unsafe fn get_unchecked_mut(&mut self, x: u8, y: u8, z: u8) -> &mut Option<Block> {
-        self.blocks.get_unchecked_mut(Self::pos_to_index_u8(x, y, z))
+    unsafe fn get_unchecked_mut(&mut self, x: i32, y: i32, z: i32) -> &mut Option<Block> {
+        self.blocks.get_unchecked_mut(Self::pos_to_index(x, y, z))
     }
 }

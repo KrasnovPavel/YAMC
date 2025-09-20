@@ -8,7 +8,7 @@ pub mod render;
 pub mod chunk;
 
 const VISIBLE_CHUNKS_DISTANCE: usize = 10;
-const CHUNKS_CUT_DISTANCE: usize = 6;
+const CHUNKS_CUT_DISTANCE: usize = 0;
 
 pub struct MapGenerationPlugin {
     pub seed: u32,
